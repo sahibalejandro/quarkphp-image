@@ -6,14 +6,14 @@ require 'ImageResizer.php';
  */
 
 // Resize wider to wider
-$ImageWider = new ImageResizer('png-with-alpha.png');
-$ImageWider->resize(800, 600, ImageResizer::RESIZE_PROPORTIONAL);
+$ImageWider = new ImageResizer('img/png-with-alpha.png');
+$ImageWider->resize(300, 100, ImageResizer::RESIZE_PROPORTIONAL);
 // Convert this image to GIF
 $ImageWider->setOutputImageType(IMAGETYPE_GIF);
 $ImageWider->output('out/wider-to-wider.gif');
 
 // Resize wider to taller
-$ImageWider->resize(1024, 768, ImageResizer::RESIZE_PROPORTIONAL);
+$ImageWider->resize(100, 300, ImageResizer::RESIZE_PROPORTIONAL);
 $ImageWider->output('out/wider-to-taller.png');
 
 // Resize wider to square
@@ -25,7 +25,7 @@ $ImageWider->output('out/wider-to-square.png');
  */
 
 // Resize taller to wider
-$ImageTaller = new ImageResizer('400x600.jpg');
+$ImageTaller = new ImageResizer('img/400x600.jpg');
 $ImageTaller->resize(300, 100, ImageResizer::RESIZE_PROPORTIONAL);
 $ImageTaller->output('out/taller-to-wider.jpg');
 
@@ -42,7 +42,7 @@ $ImageTaller->output('out/taller-to-square.jpg');
  */
 
 // Resize square to wider
-$ImageSquare = new ImageResizer('400x400.jpg');
+$ImageSquare = new ImageResizer('img/400x400.jpg');
 $ImageSquare->resize(300, 100, ImageResizer::RESIZE_PROPORTIONAL);
 $ImageSquare->output('out/square-to-wider.jpg');
 
