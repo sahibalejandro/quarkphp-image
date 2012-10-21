@@ -1,7 +1,7 @@
 <?php
-require_once 'ImageResizerException.php';
+require_once 'QuarkImageException.php';
 
-class ImageResizer
+class QuarkImage
 {
   /**
    * Original image file path
@@ -67,31 +67,31 @@ class ImageResizer
      * exception if something is wrong.
      */
     if (!file_exists($image_file)) {
-      throw new ImageResizerException(
+      throw new QuarkImageException(
         'Image file '.$image_file.' not found.',
-        ImageResizerException::FILE_NOT_FOUND
+        QuarkImageException::FILE_NOT_FOUND
       );
     } elseif (!($this->src_image_info = getimagesize($image_file))) {
-      throw new ImageResizerException(
+      throw new QuarkImageException(
         "Can't read image info from file ".$image_file,
-        ImageResizerException::CANT_READ_IMAGEINFO
+        QuarkImageException::CANT_READ_IMAGEINFO
       );
     } elseif (!$this->isImageTypeSupported($this->src_image_info[2])) {
-      throw new ImageResizerException(
+      throw new QuarkImageException(
         'Image '.$image_file.' not supported',
-        ImageResizerException::IMAGETYPE_NOT_SUPPORTED
+        QuarkImageException::IMAGETYPE_NOT_SUPPORTED
       );
     } elseif ($this->src_image_info[0] == 0 || $this->src_image_info[1] == 0) {
-      throw new ImageResizerException(
+      throw new QuarkImageException(
         "Can't determine the image size from file ".$image_file,
-        ImageResizerException::CANT_DETERMINE_SIZE
+        QuarkImageException::CANT_DETERMINE_SIZE
       );
     } elseif (
       !($this->src_image = imagecreatefromstring(file_get_contents($image_file)))
     ) {
-      throw new ImageResizerException(
+      throw new QuarkImageException(
         "Can't read image file ".$image_file,
-        ImageResizerException::CANT_READ_IMAGE
+        QuarkImageException::CANT_READ_IMAGE
       );
     }
     
@@ -107,7 +107,7 @@ class ImageResizer
    */
   public function resize(
     $w, $h,
-    $resize_type = ImageResizer::RESIZE_PROPORTIONAL
+    $resize_type = QuarkImage::RESIZE_PROPORTIONAL
   ) {
     
     // Configure for proportional resizing with stretch
@@ -151,9 +151,9 @@ class ImageResizer
         }
         break;
       default:
-        throw new ImageResizerException(
+        throw new QuarkImageException(
           'Invalid resize type',
-          ImageResizerException::INVALID_RESIZE_TYPE
+          QuarkImageException::INVALID_RESIZE_TYPE
         );
         break;
     }
@@ -210,13 +210,13 @@ class ImageResizer
    * @param string $file_name
    * @param int $output_method
    */
-  public function output($file_name, $output_method = ImageResizer::OUTPUT_FILE)
+  public function output($file_name, $output_method = QuarkImage::OUTPUT_FILE)
   {
     // Will be true if output is succesfull
     $done = false;
     
     // For stream output the $file_name must be null
-    if ($output_method == ImageResizer::OUTPUT_STREAM) {
+    if ($output_method == QuarkImage::OUTPUT_STREAM) {
       $file_name = null;
     }
     
@@ -255,9 +255,9 @@ class ImageResizer
     if ($done) {
       $this->resetDstImage();
     } else {
-      throw new ImageResizerException(
+      throw new QuarkImageException(
         "Fail to output the image, check write permissions",
-        ImageResizerException::OUTPUT_ERROR
+        QuarkImageException::OUTPUT_ERROR
       );
     }
   }
@@ -285,7 +285,7 @@ class ImageResizer
   /**
    * Set the output image type
    * 
-   * @throws ImageResizerException if type is not supported.
+   * @throws QuarkImageException if type is not supported.
    * @param int $image_type Image type value like PHP's IMATETYPE_XXX
    */
   public function setOutputImageType($image_type)
@@ -293,9 +293,9 @@ class ImageResizer
     if ($this->isImageTypeSupported($image_type)) {
       $this->dst_image_info[2] = $image_type;
     } else {
-      throw new ImageResizerException(
+      throw new QuarkImageException(
         'setOutputImageType: Image type not supported.',
-        ImageResizerException::IMAGETYPE_NOT_SUPPORTED
+        QuarkImageException::IMAGETYPE_NOT_SUPPORTED
       );
     }
   }

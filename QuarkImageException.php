@@ -1,5 +1,5 @@
 <?php
-class ImageResizerException extends Exception
+class QuarkImageException extends Exception
 {
   const FILE_NOT_FOUND          = 1;
   const CANT_READ_IMAGEINFO     = 2;
