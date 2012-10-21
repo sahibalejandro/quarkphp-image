@@ -32,4 +32,4 @@ Download the source and run `test.php`
 
 Issues
 ------
-See the [known issues](image-resizer/issues/).
+See the [known issues](quarkphp-image/issues/).
