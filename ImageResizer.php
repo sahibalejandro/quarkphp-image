@@ -61,7 +61,7 @@ class ImageResizer
   public function __construct($image_file)
   {
     // Ignore E_WARNINGS or E_NOTICE errors.
-    //$error_reporting_level = error_reporting(E_ERROR | E_PARSE);
+    $error_reporting_level = error_reporting(E_ERROR | E_PARSE);
     
     /* Read image data and populate the object with it, or throw
      * exception if something is wrong.
@@ -96,7 +96,7 @@ class ImageResizer
     }
     
     // Switch back the error reporting level
-    //error_reporting($error_reporting_level);
+    error_reporting($error_reporting_level);
     
     $this->resetDstImage();
     $this->image_file = $image_file;
@@ -105,8 +105,18 @@ class ImageResizer
   /**
    * Resize the image to width $w and height $h with type $resize_type
    */
-  public function resize($w, $h, $resize_type = ImageResizer::RESIZE_PROPORTIONAL)
-  {
+  public function resize(
+    $w, $h,
+    $resize_type = ImageResizer::RESIZE_PROPORTIONAL
+  ) {
+    
+    // Configure for proportional resizing with stretch
+    $proportional_stretch = false;
+    if ($resize_type == (self::RESIZE_PROPORTIONAL|self::RESIZE_STRETCH)) {
+      $proportional_stretch = true;
+      $resize_type          = self::RESIZE_PROPORTIONAL;
+    }
+    
     // Ignore E_WARNINGS or E_NOTICE errors.
     $error_reporting_level = error_reporting(E_ERROR | E_PARSE);
     
@@ -117,52 +127,77 @@ class ImageResizer
         break;
       case self::RESIZE_PROPORTIONAL:
         if ($this->dst_image_info[0] == $this->dst_image_info[1]) {
-          $new_w = $new_h = min($w, $h);
+          // Max width and max height are equal
+          if ($proportional_stretch){ 
+            $new_w = $new_h = min($w, $h);
+          } else {
+            $new_w = $this->dst_image_info[0];
+            $new_h = $this->dst_image_info[1];
+          }
         } elseif ($this->dst_image_info[0] > $this->dst_image_info[1]) {
+          // Calculate proportions from width
           list($new_w, $new_h) = $this->calculateProportionalSizes(
             $this->dst_image_info[0],
             $this->dst_image_info[1],
-            $w, $h
+            $w, $h, $proportional_stretch
           );
         } elseif ($this->dst_image_info[0] < $this->dst_image_info[1]) {
+          // Calculate proportions from height
           list($new_h, $new_w) = $this->calculateProportionalSizes(
             $this->dst_image_info[1],
             $this->dst_image_info[0],
-            $h, $w
+            $h, $w, $proportional_stretch
           );
         }
         break;
+      default:
+        throw new ImageResizerException(
+          'Invalid resize type',
+          ImageResizerException::INVALID_RESIZE_TYPE
+        );
+        break;
     }
     
-    $image = imagecreatetruecolor($new_w, $new_h);
+    // Create the new image with white background
+    $canvas = imagecreatetruecolor($new_w, $new_h);
+    imagefill($canvas, 0, 0, imagecolorallocate($canvas, 255, 255, 255));
     
-    // Keep alpha information for the new working image
-    if ($this->dst_image_info[2] == IMAGETYPE_PNG
+    // Handle transparency for PNG or GIF formats
+    if ($this->dst_image_info[2]  == IMAGETYPE_PNG
       || $this->dst_image_info[2] == IMAGETYPE_GIF
     ) {
-      imagealphablending($image, false);
-    }
-    if ($this->dst_image_info[2] == IMAGETYPE_PNG) {
-      imagesavealpha($image, true);
+      $transparent = imagecolorallocatealpha($canvas, 255, 255, 255, 127);
+      imagealphablending($canvas, false);
+      imagesavealpha($canvas, true);
+      imagecolortransparent($canvas, $transparent);
+      imagefilledrectangle($canvas, 0, 0, $new_w, $new_h, $transparent);
     }
     
-    imagecopyresampled(
-      $image,
-      $this->dst_image,
-      0,
-      0,
-      0,
-      0,
-      $new_w,
-      $new_h,
-      $this->dst_image_info[0],
-      $this->dst_image_info[1]
-    );
+    /* In order to preserve transparency in GIF we need to use imagecopyresized()
+     * instead of imagecopyresampled(), this is the only way I know.
+     */
+    if ($this->dst_image_info[2] == IMAGETYPE_GIF) {
+      imagecopyresized(
+        $canvas,
+        $this->dst_image,
+        0, 0, 0, 0,
+        $new_w, $new_h,
+        $this->dst_image_info[0], $this->dst_image_info[1]
+      );
+    } else {
+      imagecopyresampled(
+        $canvas,
+        $this->dst_image,
+        0, 0, 0, 0,
+        $new_w, $new_h,
+        $this->dst_image_info[0], $this->dst_image_info[1]
+      );
+    }
     
     // Save changes
     $this->dst_image_info[0] = $new_w;
     $this->dst_image_info[1] = $new_h;
-    $this->dst_image         = $image;
+    $this->dst_image         = $canvas;
     
     // Switch back the error reporting level
     error_reporting($error_reporting_level);
@@ -186,7 +221,7 @@ class ImageResizer
     }
     
     // Ignore E_WARNINGS or E_NOTICE errors.
-    //$error_reporting_level = error_reporting(E_ERROR | E_PARSE);
+    $error_reporting_level = error_reporting(E_ERROR | E_PARSE);
     
     // Output the image in the specified output type and image format
     if ($output_method == self::OUTPUT_FILE
@@ -202,11 +237,6 @@ class ImageResizer
         $done = imagejpeg($this->dst_image, $file_name, $this->jpeg_quality);
       } elseif ($this->dst_image_info[2] == IMAGETYPE_PNG) {
         /** Output PNG file */
-        
-        // Keep alpha information
-        imagealphablending($this->dst_image, false);
-        imagesavealpha($this->dst_image, true);
-        
         $done = imagepng(
           $this->dst_image,
           $file_name,
@@ -220,7 +250,7 @@ class ImageResizer
     }
     
     // Switch back the error reporting level
-    //error_reporting($error_reporting_level);
+    error_reporting($error_reporting_level);
     
     if ($done) {
       $this->resetDstImage();
@@ -315,32 +345,38 @@ class ImageResizer
     $base_size1,
     $base_size2,
     $max_size1,
-    $max_size2
+    $max_size2,
+    $stretch = false
   ) {
     
-    // Output sizes
-    $new_size1 = $max_size1;
-    $new_size2 = $max_size2;
-    
-    /*
-     * Calculate new sizes.
-     *
-     * Algorithm is like:
-     *   1. Match new_size1 to max_size1.
-     *   2. Calculate the new_size2 proportional to max_size1.
-     *   3. If new_size2 is still exceeding the value of max_size2 then recalculate
-     *      the value of new_size1 proportional to max_size2 and match new_size2
-     *      to max_size2
-     */
-    if ($base_size1 > $max_size1) {
-      // new height = original height / original width * new width
-      $new_size2 = ($base_size2 / $base_size1) * $max_size1;
-    }
-    
-    if ($new_size2 > $max_size2) {
-      // new width = original width / original height * new height
-      $new_size1 = ($new_size1 / $new_size2) * $max_size2;
+    if (!$stretch && $base_size1 <= $max_size1 && $base_size2 <= $max_size2) {
+      $new_size1 = $base_size1;
+      $new_size2 = $base_size2;
+    } else {
+      // Output sizes
+      $new_size1 = $max_size1;
       $new_size2 = $max_size2;
+      
+      /*
+       * Calculate new sizes.
+       *
+       * Algorithm is like:
+       *   1. Match new_size1 to max_size1.
+       *   2. Calculate the new_size2 proportional to max_size1.
+       *   3. If new_size2 is still exceeding the value of max_size2 then recalculate
+       *      the value of new_size1 proportional to max_size2 and match new_size2
+       *      to max_size2
+       */
+      if ($base_size1 > $max_size1 || ($stretch && $max_size1 >= $base_size1)) {
+        // new height = original height / original width * new width
+        $new_size2 = ($base_size2 / $base_size1) * $max_size1;
+      }
+          
+      if ($new_size2 > $max_size2) {
+        // new width = original width / original height * new height
+        $new_size1 = ($new_size1 / $new_size2) * $max_size2;
+        $new_size2 = $max_size2;
+      }
     }
     
     return array(round($new_size1), round($new_size2));
@@ -368,6 +404,10 @@ class ImageResizer
    */
   private function resetDstImage()
   {
+    if ($this->dst_image) {
+      imagedestroy($this->dst_image);
+    }
+    
     $this->dst_image      = $this->src_image;
     $this->dst_image_info = $this->src_image_info;
   }

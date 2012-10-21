@@ -1,55 +1,46 @@
 <?php
 require 'ImageResizer.php';
 
-/*
- * Wider to all
- */
+// Test with wider image
+$Image = new ImageResizer('img/600x400.jpg');
 
-// Resize wider to wider
-$ImageWider = new ImageResizer('img/png-with-alpha.png');
-$ImageWider->resize(300, 100, ImageResizer::RESIZE_PROPORTIONAL);
-// Convert this image to GIF
-$ImageWider->setOutputImageType(IMAGETYPE_GIF);
-$ImageWider->output('out/wider-to-wider.gif');
+// Test with taller image
+//$Image = new ImageResizer('img/400x600.jpg');
 
-// Resize wider to taller
-$ImageWider->resize(100, 300, ImageResizer::RESIZE_PROPORTIONAL);
-$ImageWider->output('out/wider-to-taller.png');
+// Test with square image
+//$Image = new ImageResizer('img/400x400.jpg');
 
-// Resize wider to square
-$ImageWider->resize(100, 100, ImageResizer::RESIZE_PROPORTIONAL);
-$ImageWider->output('out/wider-to-square.png');
+// Test with PNG24 transparency (change file extensions to .png in outputs)
+//$Image = new ImageResizer('img/png24-with-alpha.png');
 
-/*
- * Taller to all
- */
+// Test with PNG8 transparency (change file extensions to .png in outputs)
+//$Image = new ImageResizer('img/png8-with-alpha.png');
 
-// Resize taller to wider
-$ImageTaller = new ImageResizer('img/400x600.jpg');
-$ImageTaller->resize(300, 100, ImageResizer::RESIZE_PROPORTIONAL);
-$ImageTaller->output('out/taller-to-wider.jpg');
+// Test with GIF (change file extensions to .gif in outputs)
+// $Image = new ImageResizer('img/320x240.gif');
 
-// Resize taller to taller
-$ImageTaller->resize(100, 300, ImageResizer::RESIZE_PROPORTIONAL);
-$ImageTaller->output('out/taller-to-taller.jpg');
+// Resize wider than taller
+$Image->resize(300, 100, ImageResizer::RESIZE_PROPORTIONAL);
+$Image->output('out/wider.jpg');
 
-// Resize taller to square
-$ImageTaller->resize(100, 100, ImageResizer::RESIZE_PROPORTIONAL);
-$ImageTaller->output('out/taller-to-square.jpg');
+// Resize taller than wider
+$Image->resize(100, 300, ImageResizer::RESIZE_PROPORTIONAL);
+$Image->output('out/taller.jpg');
 
-/*
- * Square to all
- */
+// Resize square
+$Image->resize(100, 100, ImageResizer::RESIZE_PROPORTIONAL);
+$Image->output('out/square.jpg');
 
-// Resize square to wider
-$ImageSquare = new ImageResizer('img/400x400.jpg');
-$ImageSquare->resize(300, 100, ImageResizer::RESIZE_PROPORTIONAL);
-$ImageSquare->output('out/square-to-wider.jpg');
+// No resize if max width and max height are bigger than original
+$Image->resize(1280, 720, ImageResizer::RESIZE_PROPORTIONAL);
+$Image->output('out/proportional-no-stretch.jpg');
 
-// Resize square to taller
-$ImageSquare->resize(100, 300, ImageResizer::RESIZE_PROPORTIONAL);
-$ImageSquare->output('out/square-to-taller.jpg');
+// Resize proportional even if max width and max height are bigger than original
+$Image->resize(1280, 720,
+  ImageResizer::RESIZE_STRETCH|ImageResizer::RESIZE_PROPORTIONAL
+);
+$Image->output('out/proportional-stretch.jpg');
 
-// Resize square to square
-$ImageSquare->resize(100, 100, ImageResizer::RESIZE_PROPORTIONAL);
-$ImageSquare->output('out/square-to-square.jpg');
+// Resize agressive, no proportional
+$Image->resize(800, 100, ImageResizer::RESIZE_STRETCH);
+$Image->output('out/agressive.jpg');
